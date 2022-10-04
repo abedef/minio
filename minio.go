@@ -21,6 +21,8 @@ func Configure(endpoint string, accessKeyID string, secretAccessKey string, useS
 	AccessKeyID = accessKeyID
 	SecretAccessKey = secretAccessKey
 	UseSSL = useSSL
+
+	hasBeenConfigured = true
 }
 
 func getClient() *mg.Client {
