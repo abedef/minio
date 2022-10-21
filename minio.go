@@ -55,20 +55,18 @@ func mapToReader(m map[string]interface{}) *bytes.Reader {
 
 func SaveMap(path string, m map[string]interface{}) {
 	r := mapToReader(m)
-	uploadInfo, err := getClient().PutObject("stats", fmt.Sprint(path, ".json"), r, r.Size(), mg.PutObjectOptions{ContentType: "application/json"})
+	_, err := getClient().PutObject("stats", fmt.Sprint(path, ".json"), r, r.Size(), mg.PutObjectOptions{ContentType: "application/json"})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Print(uploadInfo)
 }
 
 func SaveText(path string, s string) {
 	r := strings.NewReader(s)
-	uploadInfo, err := getClient().PutObject("stats", fmt.Sprint(path, ".txt"), r, r.Size(), mg.PutObjectOptions{ContentType: "text/plain"})
+	_, err := getClient().PutObject("stats", fmt.Sprint(path, ".txt"), r, r.Size(), mg.PutObjectOptions{ContentType: "text/plain"})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Print(uploadInfo)
 }
 
 func LoadMap(path string) map[string]interface{} {
