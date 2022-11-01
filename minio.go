@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	mg "github.com/minio/minio-go"
@@ -14,16 +15,7 @@ import (
 var client *mg.Client
 var hasBeenConfigured = false
 var Endpoint, AccessKeyID, SecretAccessKey string
-var UseSSL bool
-
-func Configure(endpoint string, accessKeyID string, secretAccessKey string, useSSL bool) {
-	Endpoint = endpoint
-	AccessKeyID = accessKeyID
-	SecretAccessKey = secretAccessKey
-	UseSSL = useSSL
-
-	hasBeenConfigured = true
-}
+var UseSSL = true
 
 func getClient() *mg.Client {
 	if client != nil {
@@ -31,7 +23,23 @@ func getClient() *mg.Client {
 	}
 
 	if !hasBeenConfigured {
-		log.Fatalln("failed to initialize client: did not call Configure() to supply configuration values")
+		if endpoint, ok := os.LookupEnv("MINIO_ENDPOINT"); !ok {
+			log.Fatal("Missing value for MINIO_ENDPOINT environmnet variable")
+		} else {
+			Endpoint = endpoint
+		}
+		if accessKeyID, ok := os.LookupEnv("MINIO_ACCESS_ID"); !ok {
+			log.Fatal("Missing value for MINIO_ACCESS_ID environmnet variable")
+		} else {
+			AccessKeyID = accessKeyID
+		}
+		if secretAccessKey, ok := os.LookupEnv("MINIO_ACCESS_KEY"); !ok {
+			log.Fatal("Missing value for MINIO_ACCESS_KEY environmnet variable")
+		} else {
+			SecretAccessKey = secretAccessKey
+		}
+
+		hasBeenConfigured = true;
 	}
 
 	// Initialize minio client object.
