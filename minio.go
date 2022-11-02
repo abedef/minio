@@ -39,7 +39,7 @@ func getClient() *mg.Client {
 			SecretAccessKey = secretAccessKey
 		}
 
-		hasBeenConfigured = true;
+		hasBeenConfigured = true
 	}
 
 	// Initialize minio client object.
@@ -61,9 +61,27 @@ func mapToReader(m map[string]interface{}) *bytes.Reader {
 	return bytes.NewReader(data)
 }
 
+// isValid returns true if the path is composed of at least two slash-separated
+// segments, meaning it describes a bucket name followed by a path and/or file
+// name.
+func isValid(path string) bool {
+	return strings.Contains(path, "/")
+}
+
+// splitPath accepts a slash-separated path and returns the first element (the
+// bucket name) and the rest of the path (filename or path with filename).
+func splitPath(path string) (string, string) {
+	parts := strings.SplitN(path, "/", 2)
+	return parts[0], parts[1]
+}
+
 func SaveMap(path string, m map[string]interface{}) {
 	r := mapToReader(m)
-	_, err := getClient().PutObject("stats", fmt.Sprint(path, ".json"), r, r.Size(), mg.PutObjectOptions{ContentType: "application/json"})
+	if !isValid(path) {
+		log.Fatalf("invalid path: %v", path)
+	}
+	bucket, path := splitPath(path)
+	_, err := getClient().PutObject(bucket, fmt.Sprint(path, ".json"), r, r.Size(), mg.PutObjectOptions{ContentType: "application/json"})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,14 +89,22 @@ func SaveMap(path string, m map[string]interface{}) {
 
 func SaveText(path string, s string) {
 	r := strings.NewReader(s)
-	_, err := getClient().PutObject("stats", fmt.Sprint(path, ".txt"), r, r.Size(), mg.PutObjectOptions{ContentType: "text/plain"})
+	if !isValid(path) {
+		log.Fatalf("invalid path: %v", path)
+	}
+	bucket, path := splitPath(path)
+	_, err := getClient().PutObject(bucket, fmt.Sprint(path, ".txt"), r, r.Size(), mg.PutObjectOptions{ContentType: "text/plain"})
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func LoadMap(path string) map[string]interface{} {
-	object, err := getClient().GetObject("stats", fmt.Sprint(path, ".json"), mg.GetObjectOptions{})
+	if !isValid(path) {
+		log.Fatalf("invalid path: %v", path)
+	}
+	bucket, path := splitPath(path)
+	object, err := getClient().GetObject(bucket, fmt.Sprint(path, ".json"), mg.GetObjectOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,7 +119,11 @@ func LoadMap(path string) map[string]interface{} {
 }
 
 func LoadText(path string) string {
-	object, err := getClient().GetObject("stats", fmt.Sprint(path, ".txt"), mg.GetObjectOptions{})
+	if !isValid(path) {
+		log.Fatalf("invalid path: %v", path)
+	}
+	bucket, path := splitPath(path)
+	object, err := getClient().GetObject(bucket, fmt.Sprint(path, ".txt"), mg.GetObjectOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
