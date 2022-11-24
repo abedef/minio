@@ -87,16 +87,20 @@ func SaveMap(path string, m map[string]interface{}) {
 	}
 }
 
-func SaveText(path string, s string) {
+func SaveTextWithMetadata(path string, s string, m map[string]string) {
 	r := strings.NewReader(s)
 	if !isValid(path) {
 		log.Fatalf("invalid path: %v", path)
 	}
 	bucket, path := splitPath(path)
-	_, err := getClient().PutObject(bucket, fmt.Sprint(path, ".txt"), r, r.Size(), mg.PutObjectOptions{ContentType: "text/plain"})
+	_, err := getClient().PutObject(bucket, fmt.Sprint(path, ".txt"), r, r.Size(), mg.PutObjectOptions{ContentType: "text/plain", UserMetadata: m})
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func SaveText(path string, s string) {
+	SaveTextWithMetadata(path, s, map[string]string{})
 }
 
 func LoadMap(path string) map[string]interface{} {
@@ -118,7 +122,7 @@ func LoadMap(path string) map[string]interface{} {
 	return *m
 }
 
-func LoadText(path string) string {
+func loadTextWithMetadata(path string, keys []string) (string, map[string]string) {
 	if !isValid(path) {
 		log.Fatalf("invalid path: %v", path)
 	}
@@ -131,5 +135,20 @@ func LoadText(path string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(b)
+	m := map[string]string{}
+	if len(keys) > 0 {
+		options, err := object.Stat()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, k := range keys {
+			m[k] = options.Metadata.Get(fmt.Sprint("X-Amz-Meta-", k))
+		}
+	}
+	return string(b), m
+}
+
+func LoadText(path string) string {
+	text, _ := loadTextWithMetadata(path, []string{})
+	return text
 }
